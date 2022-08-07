@@ -17,6 +17,10 @@ dependencies:
 - jupyter==1.0.0
 - PyYAML==6.0
 - pip==22.2.1
+- python-kaleido==0.2.1
+- seaborn==0.11.2
 - pip:
   - git+https://github.com/jxx123/fireTS.git
   - pymongo[gssapi,aws,ocsp,snappy,srv,tls,zstd,encryption]==4.2.0
+  - tensorflow==2.9.1
+  - tensorflow-cpu==2.9.1
