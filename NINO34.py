@@ -8,6 +8,22 @@ from tensorflow import keras
 
 
 #--------------------------
+# MyLRSchedule
+#--------------------------
+
+class MyLRSchedule(keras.optimizers.schedules.LearningRateSchedule):
+    """
+    Learning rate 
+    """
+
+    def __init__(self, initial_learning_rate):
+        self.initial_learning_rate = initial_learning_rate
+
+    def __call__(self, step):
+        return self.initial_learning_rate / (step + 1)
+
+
+#--------------------------
 # KERAS_NARX_NINO34
 #--------------------------
 
@@ -27,15 +43,34 @@ class model_base:
 
         # Definiendo la red
         self.layer_input = keras.layers.Input(shape=(self.layers[0],))
-        self.hidden = keras.layers.Dense(self.layers[1],
-                                    activation=self.activation,
-                                    kernel_initializer=self.kernel_initializer)(self.layer_input)
+        self.hidden = keras.layers.Dense(units = self.layers[1],
+                                        activation=self.activation[0],
+                                        use_bias=True,
+                                        kernel_initializer=self.kernel_initializer[0],
+                                        bias_initializer="zeros",
+                                        kernel_regularizer=None,
+                                        bias_regularizer=None,
+                                        activity_regularizer=None,
+                                        kernel_constraint=None,
+                                        bias_constraint=None
+                                    )(self.layer_input)
+
+
 
         if len(layers)>2:
-            for layer in self.layers[2:]:
-                self.hidden = keras.layers.Dense(layer,
-                                        activation=self.activation,
-                                        kernel_initializer=self.kernel_initializer)(self.hidden)
+            for layer in zip(layers[2:],activation[1:],kernel_initializer[1:]):
+                self.hidden = keras.layers.Dense(units = layer[0],
+                                                activation = layer[1],
+                                                use_bias=True,
+                                                kernel_initializer=layer[2],
+                                                bias_initializer="zeros",
+                                                kernel_regularizer=None,
+                                                bias_regularizer=None,
+                                                activity_regularizer=None,
+                                                kernel_constraint=None,
+                                                bias_constraint=None
+                                        )(self.hidden)
+
 
         self.output = keras.layers.Dense(self.nout)(self.hidden)
 
@@ -46,6 +81,7 @@ class model_base:
     #--
     def taining_model(self, learning_rate,
                             loss,
+                            metrics,
                             epochs,
                             batch_size,
                             validation_split,
@@ -62,6 +98,7 @@ class model_base:
         # Integrando valores
         self.learning_rate = learning_rate
         self.loss = loss
+        self.metrics = metrics
         self.epochs = epochs
         self.batch_size = batch_size
         self.validation_split = validation_split
@@ -72,25 +109,46 @@ class model_base:
         self.mode = mode
 
         # Definiendo optimizador y learning rate
-        self.optimizer = keras.optimizers.Nadam(learning_rate = self.learning_rate)
+        self.optimizer = keras.optimizers.Adam(learning_rate=self.learning_rate,
+                                                beta_1=0.9,
+                                                beta_2=0.999,
+                                                epsilon=1e-08,
+                                                amsgrad=False,
+                                                name="Adam"
+                                            )
 
         # Compilando el modelo a entrenar
-        self.model.compile(loss=self.loss, optimizer = self.optimizer)   
+        self.model.compile( optimizer=self.optimizer,
+                            loss=self.loss,
+                            metrics=self.metrics,
+                            loss_weights=None,
+                            weighted_metrics=None,
+                            run_eagerly=None,
+                            steps_per_execution=None,
+                            jit_compile=None)
 
         # Entrenando la red
         self.es_callback = keras.callbacks\
-                            .EarlyStopping(monitor=self.monitor,
-                                        min_delta=self.min_delta,
-                                        patience=self.patience,
-                                        mode=self.mode )
+                            .EarlyStopping( monitor=self.monitor,
+                                            min_delta=self.min_delta,
+                                            patience=self.patience,
+                                            verbose=0,
+                                            mode=self.mode,
+                                            baseline=None,
+                                            restore_best_weights=False
+                                            )
 
         self.modelckpt_callback = keras.callbacks\
-                                    .ModelCheckpoint(
-                                            monitor=self.monitor,
-                                            filepath=self.path_checkpoint ,
-                                            verbose=0,
-                                            save_weights_only=True,
-                                            save_best_only=True)
+                                    .ModelCheckpoint(filepath = self.path_checkpoint,
+                                                    monitor=self.monitor,
+                                                    verbose=0,
+                                                    save_best_only=True,
+                                                    save_weights_only=True,
+                                                    mode="auto",
+                                                    save_freq="epoch",
+                                                    options=None,
+                                                    initial_value_threshold=None
+                                                    )
 
                                         
     #---
@@ -101,6 +159,7 @@ class model_base:
                     kernel_initializer = "lecun_normal",
                     learning_rate = 1e-3,
                     loss = "mean_squared_error",
+                    metrics = ['mae'], 
                     epochs = 5000,
                     batch_size = 32,
                     validation_split = 0.30,
@@ -126,6 +185,7 @@ class model_base:
         # Entrenamiento
         clase.taining_model(learning_rate = learning_rate,
                             loss = loss,
+                            metrics = metrics,
                             epochs = epochs,
                             batch_size = batch_size,
                             validation_split = validation_split,
@@ -180,6 +240,7 @@ class KERAS_NARX_NINO34:
                             kernel_initializer,
                             learning_rate,
                             loss,
+                            metrics,
                             epochs,
                             batch_size ,
                             validation_split,
@@ -198,6 +259,7 @@ class KERAS_NARX_NINO34:
                                             kernel_initializer = kernel_initializer,
                                             learning_rate = learning_rate,
                                             loss = loss,
+                                            metrics = metrics,
                                             epochs = epochs,
                                             batch_size = batch_size,
                                             validation_split = validation_split,
@@ -212,13 +274,25 @@ class KERAS_NARX_NINO34:
         self.epochs = epochs
         self.validation_split = validation_split
 
-        self.history = self.model.fit(x=self.input_data,
-                                    y=self.output_data,
-                                    epochs=self.epochs,
-                                    verbose=0,
-                                    validation_split=self.validation_split,
-                                    callbacks=[self.class_model.es_callback, self.class_model.modelckpt_callback]
-                                    )
+        self.history = self.model.fit(  x=self.input_data,
+                                        y=self.output_data,
+                                        batch_size=None,
+                                        epochs=self.epochs,
+                                        verbose=0,
+                                        callbacks=[self.class_model.es_callback, self.class_model.modelckpt_callback],
+                                        validation_split=self.validation_split,
+                                        validation_data=None,
+                                        shuffle=True,
+                                        class_weight=None,
+                                        sample_weight=None,
+                                        initial_epoch=0,
+                                        steps_per_epoch=None,
+                                        validation_steps=None,
+                                        validation_batch_size=None,
+                                        validation_freq=1,
+                                        max_queue_size=10,
+                                        workers=1,
+                                        use_multiprocessing=False)
 
 
     def loss_plot(self,title,path):
@@ -276,10 +350,34 @@ class KERAS_NARX_NINO34:
 
         self.pd_validation.loc[ self.data_test.shape[0]: , 'prediction' ] = pd_selfPrediction[-self.prediction_order:][self.y_output].to_numpy()
 
+        # Self prediction 
+        pd_selfPrediction = self.pd_model.copy()
+        for x in range(self.prediction_order):
+            selfPrediction = self.forecast_one_step( data=pd_selfPrediction.copy(),
+                                                model=self.model,
+                                                auto_order=self.auto_order,
+                                                exog_order=self.exog_order,
+                                                exog_delay=self.exog_delay,
+                                                exogena=self.exogena,
+                                                y_output=self.y_output,
+                                                batch_size=self.batch_size)
+
+            selfPrediction[self.exogena] = selfPrediction[self.y_output]
+            pd_selfPrediction = pd.concat([pd_selfPrediction, selfPrediction]).copy()  
+
+
+        pd_forecast = pd_selfPrediction[-self.prediction_order:][[self.y_output]+['type']].reset_index()
+        pd_forecast['prediction'] = pd_forecast[self.y_output]
+        pd_forecast[self.y_output] = np.nan
+        pd_forecast[self.exogena] = np.nan
+
+        self.pd_validation = pd.concat([self.pd_validation, pd_forecast[self.pd_validation.columns]])
+
 
 
     #--
-    def forecast_one_step(self,data,model,auto_order,exog_order,exog_delay,exogena,y_output,batch_size):
+    @staticmethod
+    def forecast_one_step(data,model,auto_order,exog_order,exog_delay,exogena,y_output,batch_size):
         """
         Funcion para la prediccion a one step
         """
@@ -297,12 +395,12 @@ class KERAS_NARX_NINO34:
         pd_update['type'] = 'self_prediction'
 
         # Formato a los datos
-        input_data_validate, _ = self.date_window(pd_model=data.copy(),
-                                            auto_order=auto_order,
-                                            exog_order=exog_order,
-                                            exog_delay=exog_delay,
-                                            exogena=exogena,
-                                            output=y_output)
+        input_data_validate, _ = KERAS_NARX_NINO34.date_window(pd_model=data.copy(),
+                                                                auto_order=auto_order,
+                                                                exog_order=exog_order,
+                                                                exog_delay=exog_delay,
+                                                                exogena=exogena,
+                                                                output=y_output)
 
         # Data para pronostico
         past_row = input_data_validate[-1].reshape(1, input_data_validate.shape[1])
@@ -375,3 +473,134 @@ class KERAS_NARX_NINO34:
         plt.savefig(path)
 
         plt.show()
+
+
+
+    #--
+    @staticmethod
+    def metrics(hidden_layer_sizes,observado,prediccion):
+
+        """
+        Calculo de las metricas del modelo
+        """
+        
+        from sklearn.metrics import (mean_absolute_percentage_error,mean_absolute_error,mean_squared_error,r2_score)
+
+        return {'hidden_layer_sizes': hidden_layer_sizes,
+              'map':[mean_absolute_percentage_error(observado, prediccion)],
+              'mae':[mean_absolute_error(observado, prediccion)],
+              'rmse':[mean_squared_error(observado, prediccion,squared=False)],
+              'r2': [r2_score(observado, prediccion, multioutput='variance_weighted')],
+              }
+
+
+    #--
+    @staticmethod
+    def graf(data_figure_ajuste,data_figure_validacion,data_figure_pronostico,y,y_predict):
+        
+        import plotly.graph_objects as go
+        from plotly.graph_objects import Layout
+
+        fig = go.Figure(layout=Layout(plot_bgcolor='rgba(0,0,0,0)'))
+
+        fig.add_annotation(x=data_figure_ajuste.index.max() - pd.DateOffset(months=3*12) ,#pd.Timestamp('2019-01-01'),
+                    y=29,
+                    text="Entrenamiento",
+                    showarrow=False,
+                    yshift=10)
+
+        fig.add_trace(go.Scatter(x=data_figure_ajuste.index, y=data_figure_ajuste[y_predict],
+                                mode='lines+markers',name='Pronóstico entrenamiento',
+                                marker_symbol='x-thin',
+                                marker_line_width=3,
+                                marker_size=3,
+                                marker_line_color='#000000',
+                                marker_color='#000000',
+                                line=dict(color='#FF7203', width=2)))
+
+        fig.add_trace(go.Scatter(x=data_figure_ajuste.index, y=data_figure_ajuste[y],
+                                mode='lines+markers',name='SSTT entrenamiento',
+                                marker_symbol='x-thin',
+                                marker_line_width=3,
+                                marker_size=3,
+                                marker_line_color='#000000',
+                                marker_color='#000000',
+                                line=dict(color='#C10101', width=2)))
+
+
+        months = int(data_figure_pronostico.shape[0]/3)
+        fig.add_annotation(x= data_figure_validacion.index.min() + pd.DateOffset(months=months)  ,#pd.Timestamp('2021-07-01'),
+                    y=29,
+                    text="Validación",
+                    showarrow=False,
+                    yshift=10)
+        fig.add_trace(go.Scatter(x=data_figure_validacion.index, y=data_figure_validacion[y_predict],
+                            mode='lines+markers',name='Pronóstico validación',                       
+                                marker_symbol='square',
+                                marker_line_width=2,
+                                marker_size=3,
+                                marker_line_color='#030BFF',
+                                marker_color='#030BFF', 
+                                line=dict(color='#FF7203', width=2)
+                                ))
+
+        fig.add_trace(go.Scatter(x=data_figure_validacion.index, y=data_figure_validacion[y],
+                            mode='lines+markers',name='SSTT validación',
+                            marker_symbol='square',
+                            marker_line_width=2,
+                            marker_size=3,
+                            marker_line_color='#030BFF',
+                            marker_color='#030BFF', 
+                            line=dict(color='#C10101', width=2)))
+
+
+
+        fig.add_annotation(x=data_figure_pronostico.index.min() + pd.DateOffset(months=months),#pd.Timestamp('2022-09-01'),
+                    y=29,
+                    text="Pronóstico",
+                    showarrow=False,
+                    yshift=10)
+        fig.add_trace(go.Scatter(x=data_figure_pronostico.index, y=data_figure_pronostico[y_predict],
+                                text=data_figure_pronostico[y_predict].apply(lambda x: str(round(x,2)) ),
+                                textposition="top right",
+                                marker_symbol='star',
+                                marker_line_width=3,
+                                marker_size=3,
+                                marker_line_color='#EA9800',
+                                marker_color='#EA9800',
+                                mode='lines+markers+text',name='Pronóstico SSTT',
+                                line=dict(color='#FF7203', width=2,dash='dash')))
+
+        fig.add_vline(x=data_figure_ajuste.index.max(), line_width=3, line_dash="dash", line_color="#580606")
+        fig.add_vline(x=data_figure_validacion.index.max(), line_width=3, line_dash="dash", line_color="#580606")
+
+
+        fig.update_xaxes(tickformat="%Y/%m",showline=True, linewidth=1, linecolor='black', gridcolor='#E4E4E4',mirror=True,
+                        ticks="outside", tickwidth=2, tickcolor='#5C2B05', ticklen=10)
+        fig.update_yaxes(showline=True, linewidth=1, linecolor='black', gridcolor='#E4E4E4',mirror=True,
+                        ticks="outside", tickwidth=2, tickcolor='#5C2B05', ticklen=10)
+
+
+        fig.update_traces(textfont_size=11)
+        fig.update_layout(title="""
+                            SST promedio en la región NIÑO 3.4 
+                            <br><sup>Pronóstico para el periodo {date_init} al {date_fin}</sup>
+                            """.format(date_init=str(data_figure_pronostico.index.min().strftime('%Y-%m-%d')),
+                                    date_fin=str(data_figure_pronostico.index.max().strftime('%Y-%m-%d')) ),
+                        xaxis_title='Mes',
+                        yaxis_title='Temperatura (°C)',
+                        legend_title_text='Serie',
+                        legend_title = dict( font = dict(size = 25)),
+                        legend=dict(y=0.5,
+                                    #traceorder='reversed',
+                                    font_size=22),
+                        uniformtext_minsize=8,
+                        uniformtext_mode='hide',
+                        height=800,
+                        width=1500,
+                        font = dict(size = 22),
+                        xaxis_range=[ data_figure_ajuste.index.max() - pd.DateOffset(months=5*12) , data_figure_pronostico.index.max() ],
+
+                        )
+
+        return fig
