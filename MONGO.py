@@ -1,3 +1,6 @@
+# PROYECTO: SISTEMA PARA EL SEGUIMIENTO DE ECOSISTEMAS VENEZOLANOS
+# AUTOR: Javier Martinez
+
 import yaml 
 
 # Definiendo variables
