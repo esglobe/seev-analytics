@@ -24,3 +24,4 @@ dependencies:
   - pymongo[gssapi,aws,ocsp,snappy,srv,tls,zstd,encryption]==4.2.0
   - tensorflow==2.9.1
   - tensorflow-cpu==2.9.1
+  - pygad==2.17.0
