@@ -10,12 +10,18 @@ dependencies:
 - matplotlib==3.5.2
 - pandas==1.4.3
 - numpy==1.23.1
-- pymongo==4.2.0
 - requests==2.28.1
 - plotly==5.9.0
 - statsmodels==0.13.2
 - scikit-learn==1.1.1
 - jupyter==1.0.0
+- PyYAML==6.0
 - pip==22.2.1
+- python-kaleido==0.2.1
+- seaborn==0.11.2
 - pip:
   - git+https://github.com/jxx123/fireTS.git
+  - pymongo[gssapi,aws,ocsp,snappy,srv,tls,zstd,encryption]==4.2.0
+  - tensorflow==2.9.1
+  - tensorflow-cpu==2.9.1
+  - pygad==2.17.0
