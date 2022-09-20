@@ -136,9 +136,9 @@ def forecast_oni_grap(pd_oni):
                             ))
 
     # pronostico
-    fig.add_trace(go.Scatter(x=data_fig[data_fig.type=='self_prediction'].index, 
-                            y=data_fig[data_fig.type=='self_prediction'].oni,
-                            text=data_fig[data_fig.type=='self_prediction'].oni.apply(lambda x: str(round(x,2)) ),
+    fig.add_trace(go.Scatter(x=data_fig[data_fig.type=='prediction'].index, 
+                            y=data_fig[data_fig.type=='prediction'].oni,
+                            text=data_fig[data_fig.type=='prediction'].oni.apply(lambda x: str(round(x,2)) ),
                             textposition="bottom right",
                             marker_symbol='star',
                             marker_line_width=3,
@@ -186,7 +186,7 @@ def forecast_oni_grap(pd_oni):
     fig.add_annotation(x=data_fig.index.max() - pd.DateOffset(months=4*12), y=-2-0.35,text="La Niña",showarrow=False,yshift=15,font=dict(color='#001BFF') )
 
     # linea de pronostico
-    fig.add_vline(x=data_fig[data_fig.type=='self_prediction'].index.min(), line_width=3, line_dash="dash", line_color="#580606")
+    fig.add_vline(x=data_fig[data_fig.type=='prediction'].index.min(), line_width=3, line_dash="dash", line_color="#580606")
 
     fig.update_xaxes(tickformat="%Y/%m",showline=True, linewidth=1, linecolor='black', gridcolor='#E4E4E4',mirror=True,
                     ticks="outside", tickwidth=2, tickcolor='#5C2B05', ticklen=10)
@@ -198,8 +198,8 @@ def forecast_oni_grap(pd_oni):
                             Índice Niño Oceánico (ONI) pronóstico periodo {date_init} al {date_fin}
                             <br><sup>Promedio de 3-meses para las anomalías SST en la región Niño 3.4 (variación periodos base de 30-años)
                             </sup>
-                            """.format(date_init=str(data_fig[data_fig.type=='self_prediction'].index.min().strftime('%Y-%m-%d')),
-                                    date_fin=str(data_fig[data_fig.type=='self_prediction'].index.max().strftime('%Y-%m-%d')) ),
+                            """.format(date_init=str(data_fig[data_fig.type=='prediction'].index.min().strftime('%Y-%m-%d')),
+                                    date_fin=str(data_fig[data_fig.type=='prediction'].index.max().strftime('%Y-%m-%d')) ),
                     xaxis_title='Mes',
                     yaxis_title='Promedio 3-Meses anomalías SST (°C)',
                     uniformtext_minsize=8,
