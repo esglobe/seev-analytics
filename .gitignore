@@ -1,4 +1,5 @@
 config.yml
 /cerro_saroche/experiments/**
 /terepaima/experiments/**
+/sst_nino34/experiments/**
 /__pycache__/**
