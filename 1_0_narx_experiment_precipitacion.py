@@ -17,9 +17,9 @@ for point in [1,2,3,4,5,
                     'y_output':'precip_t',
                     'exogena':'oni',
                     'prediction_order':str(12),
-                    'auto_order':str(15*12),
+                    'auto_order':str(20*12),
                     'exog_order':str(12),
-                    'exog_delay':str(4),
+                    'exog_delay':str(0),
                     'activation':'tanh'
                     }
 
