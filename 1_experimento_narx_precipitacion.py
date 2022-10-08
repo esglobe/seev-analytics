@@ -202,7 +202,8 @@ if __name__ == "__main__":
             }
 
     # Neuronas
-    n_neurons = [int(2*x_train.shape[-1]/3)]
+    n_input = int(2*x_train.shape[-1]/3)
+    n_neurons = [n_input - int(n_input/2), int(n_input/2)]
 
     # Modelo
     model = keras.models.Sequential()
@@ -220,6 +221,20 @@ if __name__ == "__main__":
 
     # Hidden Leyers
     model.add(keras.layers.Dense(   units=n_neurons[0],
+                                    activation=activation[0],
+                                    use_bias = confi.get('Dense').get('use_bias'),
+                                    kernel_initializer=kernel_initializer,
+                                    bias_initializer=bias_initializer,
+                                    kernel_regularizer = confi.get('Dense').get('kernel_regularizer'),
+                                    bias_regularizer = confi.get('Dense').get('bias_regularizer'),
+                                    activity_regularizer = confi.get('Dense').get('activity_regularizer'),
+                                    kernel_constraint = confi.get('Dense').get('kernel_constraint'),
+                                    bias_constraint = confi.get('Dense').get('bias_constraint')
+                                    ))
+
+    
+    # Hidden Leyers
+    model.add(keras.layers.Dense(   units=n_neurons[1],
                                     activation=activation[0],
                                     use_bias = confi.get('Dense').get('use_bias'),
                                     kernel_initializer=kernel_initializer,
@@ -361,7 +376,7 @@ if __name__ == "__main__":
                     'exog_delay':[exog_delay],
                     'activation':[activation[0]],
                     'id_point':[id_point],
-                    'n_neurons':n_neurons,
+                    'n_neurons':str(n_neurons),
                     'capas':[len(n_neurons)],
                     'training_mse':[history.history["loss"][-1]],
                     'training_rmse':[history.history["root_mean_squared_error"][-1]],

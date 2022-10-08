@@ -17,10 +17,10 @@ for point in [1,2,3,4,5,
                     'y_output':'precip_t',
                     'exogena':'oni',
                     'prediction_order':str(12),
-                    'auto_order':str(20*12),
-                    'exog_order':str(12),
-                    'exog_delay':str(0),
-                    'activation':'tanh'
+                    'auto_order':str(25*12),
+                    'exog_order':str(7),
+                    'exog_delay':str(3),
+                    'activation':'sigmoid'
                     }
 
     response = subprocess.run(["python3", "./1_experimento_narx_precipitacion.py",
