@@ -210,8 +210,8 @@ if __name__ == "__main__":
                     }
             }
 
-    total = int(3*x_train.shape[-1]/3)
-    n_neurons = [int(total), 1]
+    total = int(2*x_train.shape[-1]/3)
+    n_neurons = [int(total)]
     #n_neurons = [total]
 
     activation = len(n_neurons)*[f_activation]
@@ -248,7 +248,7 @@ if __name__ == "__main__":
 
 
     # Hidden Leyers
-    if len(n_neurons)>=1:
+    if len(n_neurons)>1:
         for index in list( range(1, len(n_neurons)) ):
 
             model.add(keras.layers.Dense(   units=n_neurons[index],
@@ -372,9 +372,9 @@ if __name__ == "__main__":
                     'id_point':[id_point],
                     'n_neurons':str(n_neurons),
                     'capas':[len(n_neurons)],
-                    'training_mse':[history.history["loss"][-1]],
-                    'training_rmse':[history.history["root_mean_squared_error"][-1]],
-                    'training_mae':[history.history["mean_absolute_error"][-1]],
+                    'training_mse':[trainig_metrics["mse"]],
+                    'training_rmse':[trainig_metrics["rmse"]],
+                    'training_mae':[trainig_metrics["mae"]],
                     'trainig_mape':[trainig_metrics['mape']],
                     'trainig_r':[trainig_metrics['r2']],
                     'validation_mse':[validation_metrics["mse"]],
@@ -406,10 +406,10 @@ if __name__ == "__main__":
     pd_prediction['precip_t'] = np.nan
 
     # Uniendo informacion
-    pd_summary = pd.concat([trainind_pd[list(pd_prediction)], 
-                            pd_test[list(pd_prediction)], 
-                            validation_pd[list(pd_prediction)], 
-                            pd_prediction[list(pd_prediction)]
+    pd_summary = pd.concat([trainind_pd[list(pd_prediction)].reset_index(drop=False), 
+                            pd_test[list(pd_prediction)].reset_index(drop=False), 
+                            validation_pd[list(pd_prediction)].reset_index(drop=False), 
+                            pd_prediction[list(pd_prediction)].reset_index(drop=False)
                             ])
 
     # Logica de guardado
