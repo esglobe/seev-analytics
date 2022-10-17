@@ -108,8 +108,8 @@ if __name__ == "__main__":
     f_activation = sys.argv[9]
 
     # Parametros de modelos
-    patience = 100
-    epochs=500
+    patience = 10
+    epochs=100
 
     # Directorio del experimento
     DIR = f'./{park}/'
@@ -405,11 +405,15 @@ if __name__ == "__main__":
 
     pd_prediction['precip_t'] = np.nan
 
+    columns = list(pd_prediction.reset_index(drop=False))
+    print(columns)
+    
+
     # Uniendo informacion
-    pd_summary = pd.concat([trainind_pd[list(pd_prediction)].reset_index(drop=False), 
-                            pd_test[list(pd_prediction)].reset_index(drop=False), 
-                            validation_pd[list(pd_prediction)].reset_index(drop=False), 
-                            pd_prediction[list(pd_prediction)].reset_index(drop=False)
+    pd_summary = pd.concat([trainind_pd.reset_index(drop=True)[columns], 
+                            pd_test.reset_index(drop=False)[columns], 
+                            validation_pd[columns], 
+                            pd_prediction.reset_index(drop=False)[columns]
                             ])
 
     # Logica de guardado
