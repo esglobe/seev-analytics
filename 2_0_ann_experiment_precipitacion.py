@@ -3,16 +3,12 @@ import pandas as pd
 from datetime import datetime
 
 
-parametros = [{  'park':'cerro_saroche',
-                    'test_size':str(0.2),
-                    'random_state':str(0),
-                    'activation':'sigmoid',
-                    },
-                    {  'park':'cerro_saroche',
-                    'test_size':str(0.2),
-                    'random_state':str(0),
-                    'activation':'softplus',
-                    }]
+parametros = [{'park':'cerro_saroche',
+                'test_size':str(0.2),
+                'random_state':str(0),
+                'activation':'sigmoid',#
+                }
+                ]
 
 for parametro in parametros:
 

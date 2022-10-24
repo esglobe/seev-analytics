@@ -1,7 +1,5 @@
 import os
 
-print('> Directorio actual: ', os.getcwd())  
-
 from utils.MONGO import CONEXION
 from utils.UTILS import *
 from datetime import datetime
@@ -44,7 +42,7 @@ if __name__ == "__main__":
     f_activation = sys.argv[4]#'sigmoid'
 
     epochs = 1000
-    patience = 20
+    patience = 40
 
 
     pd_precipitacion = pd.read_pickle(f'./{park}/data/narx_precipitacion.pkl')
@@ -81,12 +79,11 @@ if __name__ == "__main__":
                                                         stratify=data_model[['latitud',	'longitud']])
 
     # Generando la red
-    total = int(2*X_train.shape[1]/3)
-    n_neuronas = [total-1, 1]
+    total = int(X_train.shape[1])
+    n_neuronas = [total, int(2*total), int(2*total), int(total),    1]
+    activation = ['tanh',f_activation, f_activation, f_activation , 'linear']
+    #activation = len(n_neuronas)*[f_activation]
 
-    activation = len(n_neuronas)*[f_activation]
-
-    import os
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
     # Metrícas

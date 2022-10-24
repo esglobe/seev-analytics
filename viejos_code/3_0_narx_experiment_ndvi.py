@@ -1,5 +1,3 @@
-
-
 import subprocess
 import pandas as pd
 from datetime import datetime
@@ -17,9 +15,9 @@ for point in [1,2,6,7,8,9,10,
                     'id_point':str(point),
                     'y_output':'ndvi_t',
                     'exogena':'precipitation_ann_t',
-                    'prediction_order':str(2*12),
-                    'auto_order':str(3*12),
-                    'exog_order':str(3*12),
+                    'prediction_order':str(1*12),
+                    'auto_order':str(5*12),
+                    'exog_order':str(1*12),
                     'exog_delay':str(1),
                     'activation':'sigmoid'
                     }

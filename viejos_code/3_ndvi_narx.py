@@ -41,6 +41,7 @@ if __name__ == "__main__":
     # Parque
     park = sys.argv[1]
     id_point = int(sys.argv[2])
+    print(id_point)
 
     y_output = sys.argv[3]
     exogena = sys.argv[4]
@@ -53,8 +54,8 @@ if __name__ == "__main__":
     f_activation = sys.argv[9]
 
     # Parametros de modelos
-    patience = 15
-    epochs=500
+    patience = 5
+    epochs=1000
 
     # # Descargando información
 

@@ -142,8 +142,8 @@ if __name__ == "__main__":
                     }
             }
 
-    total = int(x_train.shape[-1])
-    n_neurons = [int(8*total/10),int(6*total/10),int(4*total/10), int(2*total/10)]
+    total = int(2*x_train.shape[-1]/3)
+    n_neurons = [int(total),int(2*total/3),int(1*total/3)]
     #n_neurons = [total]
 
     activation = len(n_neurons)*[f_activation]

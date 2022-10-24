@@ -198,8 +198,8 @@ def forecast_oni_grap(pd_oni):
                             Índice Niño Oceánico (ONI) pronóstico periodo {date_init} al {date_fin}
                             <br><sup>Promedio de 3-meses para las anomalías SST en la región Niño 3.4 (variación periodos base de 30-años)
                             </sup>
-                            """.format(date_init=str(data_fig[data_fig.type=='prediction'].index.min().strftime('%Y-%m-%d')),
-                                    date_fin=str(data_fig[data_fig.type=='prediction'].index.max().strftime('%Y-%m-%d')) ),
+                            """.format(date_init=str(data_fig[data_fig.type=='prediction'].index.min().strftime('%Y/%m')),
+                                    date_fin=str(data_fig[data_fig.type=='prediction'].index.max().strftime('%Y/%m')) ),
                     xaxis_title='Mes',
                     yaxis_title='Promedio 3-Meses anomalías SST (°C)',
                     uniformtext_minsize=8,
@@ -512,8 +512,8 @@ def grafico_oni(data_fig):
                             Índice Niño Oceánico (ONI) periodo {date_init} al {date_fin}
                             <br><sup>Promedio de 3-meses para las anomalías SST en la región Niño 3.4 (variación periodos base de 30-años)
                             </sup>
-                            """.format(date_init=str(data_fig.index.min().strftime('%Y-%m-%d')),
-                                    date_fin=str(data_fig.index.max().strftime('%Y-%m-%d')) ),
+                            """.format(date_init=str(data_fig.index.min().strftime('%Y/%m')),
+                                    date_fin=str(data_fig.index.max().strftime('%Y/%m')) ),
                     xaxis_title='Mes',
                     yaxis_title='Promedio 3-Meses anomalías SST (°C)',
     #                   legend_title_text='Serie',

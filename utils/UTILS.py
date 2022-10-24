@@ -195,8 +195,8 @@ def graf_sst(data_figure_ajuste,data_figure_validacion,data_figure_pronostico,y,
     fig.update_layout(title="""
                         SST promedio en la región NIÑO 3.4 
                         <br><sup>Pronóstico para el periodo {date_init} al {date_fin}</sup>
-                        """.format(date_init=str(data_figure_pronostico.index.min().strftime('%Y-%m-%d')),
-                                date_fin=str(data_figure_pronostico.index.max().strftime('%Y-%m-%d')) ),
+                        """.format(date_init=str(data_figure_pronostico.index.min().strftime('%Y/%m')),
+                                date_fin=str(data_figure_pronostico.index.max().strftime('%Y/%m')) ),
                     xaxis_title='Mes',
                     yaxis_title='Temperatura (°C)',
                     legend_title_text='Serie',
