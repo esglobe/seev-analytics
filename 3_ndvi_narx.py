@@ -28,63 +28,6 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-#---------------------
-def split_data(pd_model_id,exog_order,auto_order,exog_delay,prediction_order,exogena,y_output):
-    """
-    Funcion para dale estructura a los datos
-    """
-
-    x_data = []
-    y_data = []
-
-    min_index = max([exog_order+exog_delay,auto_order])
-    index_split = pd_model_id[min_index:].index
-
-    for t in range(len(index_split)):
-
-        pd_to_split = pd_model_id[pd_model_id.index<=index_split[t]][-min_index-1:]
-
-        exogen_values = pd_to_split[(pd_to_split.shape[0]-exog_delay-exog_order):(pd_to_split.shape[0]-exog_delay)][[exogena]].values.reshape(-1)
-        auto_values = pd_to_split[-auto_order-1:][[y_output]].values.reshape(-1)
-
-        x_data.append(np.concatenate([exogen_values, auto_values[:-1]],axis=None))
-        y_data.append(auto_values[-1])
-        
-    x_data = np.array(x_data)
-    y_data = np.array(y_data)
-
-    return x_data, y_data
-
-#---------------------
-def predict_one_stap_narx(model,data_predict,data_exogena,exog_order,auto_order,exog_delay,prediction_order,exogena,y_output):
-    """
-    Funcion para predecir a un paso
-    """
-    
-    data_proces = pd.concat([data_predict,data_exogena[list(data_predict)]])
-    data_proces['type'] = 'data_in'
-
-    date_min = data_proces[data_proces[y_output].isnull()].index.min()
-    date_max = data_proces[data_proces[y_output].isnull()].index.max()
-
-    date = date_min
-    while date <= date_max:
-        x_data_test, y_data_test = split_data(data_proces[data_proces.index<=date],
-                                                exog_order,
-                                                auto_order,
-                                                exog_delay,
-                                                prediction_order,
-                                                exogena,y_output)
-
-        predit = model.predict(x_data_test[-1].reshape(1, x_data_test.shape[1]), verbose=0).reshape(-1)
-        data_proces.loc[(data_proces.index==date),y_output]=predit
-
-        date = data_proces[data_proces[y_output].isnull()].index.min()
-
-    return data_proces[data_proces.index>=date_min]
-#---------------------
-
-
 #---
 if __name__ == "__main__":
     print('> Directorio actual: ', os.getcwd())
@@ -127,36 +70,24 @@ if __name__ == "__main__":
     print(data_pandas[data_pandas.ndvi_media.notnull()].periodo.min())
     print((data_pandas[data_pandas.ndvi_media.notnull()].periodo.max()))
 
-    list_interpolate = []
+    pd_precipitacion = pd.read_pickle(f'./{park}/data/ann_precipitacion.pkl')[['park',
+                                                                                'periodo',
+                                                                                'year',
+                                                                                'month',
+                                                                                'id_point',
+                                                                                'latitud',
+                                                                                'longitud',
+                                                                                'type',
+                                                                                'prediction_ann',
+                                                                                'ndvi_media']]
 
-    for id in data_pandas.sort_values('id_point',ascending=True).id_point.unique():
 
-        pd_interpolate = data_pandas[[ 'id_point', 'latitud', 
-                                    'longitud', 'ndvi_media','periodo']]\
-                                    .query(f'id_point=={id}')\
-                                    .sort_values('periodo',ascending=True)
-
-        pd_interpolate['ndvi_media'] = pd_interpolate['ndvi_media'].interpolate(method="linear")
-
-        list_interpolate.append(pd_interpolate)
-
-    pd_ndvi = pd.concat(list_interpolate)
-
-    # ## Cargando la data
-    pd_precipitacion = pd.read_pickle(f'./{park}/data/ann_precipitacion.pkl')
-    pd_precipitacion = pd_precipitacion[['park', 'periodo', 'year', 'month', 'id_point', 'latitud', 'longitud',
-                                        'type', 'precipitacion_mm','elevacion_media', 'precipitacion_narx', 'prediction_ann']]
-
-    pd_model = pd.merge(pd_precipitacion,pd_ndvi,
-                        on=['periodo','id_point','latitud','longitud'],
-                        how='left')
-
-    # Aplicando transformación
     # Transformacion
     ndvi_transformacion = MinMaxScaler() #LogMinimax.create( pd_sst.oni.to_numpy() )
-    ndvi_transformacion.fit(pd_model[['prediction_ann','ndvi_media']])
+    ndvi_transformacion.fit(pd_precipitacion[['prediction_ann','ndvi_media']])
 
-    pd_model[['precipitation_ann_t','ndvi_t']] = ndvi_transformacion.transform( pd_model[['prediction_ann','ndvi_media']] )
+    pd_precipitacion[['precipitation_ann_t','ndvi_t']] = ndvi_transformacion.transform( pd_precipitacion[['prediction_ann','ndvi_media']] )
+
 
     # Directorio experimentos
     DIR = f'./{park}/'
@@ -168,9 +99,10 @@ if __name__ == "__main__":
         pass
 
     # # Ajustando modelo NARX
-    pd_model_id = pd_model[pd_model.id_point==id_point]
+    pd_model_id = pd_precipitacion[pd_precipitacion.id_point==id_point]
     pd_model_id.index = pd.to_datetime(pd_model_id.periodo)
-    pd_model_id = pd_model_id[[y_output,exogena]].dropna()
+    pd_model_id = pd_model_id[[y_output,exogena]].dropna().sort_index()
+
 
     x_data, y_data = split_data(pd_model_id,exog_order,auto_order,exog_delay,prediction_order,exogena,y_output)
 
@@ -270,7 +202,6 @@ if __name__ == "__main__":
 
     model.compile(loss='mean_squared_error', optimizer='adam', metrics=[mae,rmse]) 
 
-    # %%
     callback = keras.callbacks.EarlyStopping(
                                                 monitor="loss",
                                                 min_delta=0,
@@ -400,7 +331,7 @@ if __name__ == "__main__":
     # Pronóstico
     data_predict = pd_model_id[[y_output,exogena]]
 
-    data_exogena = pd_model[(pd_model.periodo > data_predict.index.max()) & (pd_model.id_point==id_point)][[exogena,'periodo']]
+    data_exogena = pd_precipitacion[(pd_precipitacion.periodo > data_predict.index.max()) & (pd_precipitacion.id_point==id_point)][[exogena,'periodo']]
     data_exogena.index = pd.to_datetime(data_exogena.periodo)
     data_exogena[y_output] = np.nan
     data_exogena = data_exogena.sort_index()[[exogena,y_output]]
@@ -423,6 +354,17 @@ if __name__ == "__main__":
                             pd_prediction[list(pd_prediction)]
                             ])
 
+    
+    model_confi = {"id_point":id_point,
+            "n_neurons":n_neurons,
+            "activation":activation,
+            "prediction_order":prediction_order,
+            "auto_order":auto_order,
+            "exog_order":exog_order,
+            "exog_delay":exog_delay,
+            "metrics":dict_metrics
+            }
+
     # Logica de guardado
     if os.listdir(f'{DIR}{experimento}') == []:
 
@@ -435,6 +377,10 @@ if __name__ == "__main__":
         # History
         with open(f'{DIR}{experimento}/history.pkl', 'wb') as file_pi:
             pickle.dump(history.history, file_pi)
+
+        # confi
+        with open(f'{DIR}{experimento}/model_confi.pkl', 'wb') as file_pi:
+            pickle.dump(model_confi, file_pi)
         
         # guardando resultados
         pd_summary.to_pickle(f'{DIR}{experimento}/predicciones.pkl')
@@ -455,6 +401,10 @@ if __name__ == "__main__":
             # History
             with open(f'{DIR}{experimento}/history.pkl', 'wb') as file_pi:
                 pickle.dump(history.history, file_pi)
+
+            # confi
+            with open(f'{DIR}{experimento}/model_confi.pkl', 'wb') as file_pi:
+                pickle.dump(model_confi, file_pi)
             
             # guardando resultados
             pd_summary.to_pickle(f'{DIR}{experimento}/predicciones.pkl')

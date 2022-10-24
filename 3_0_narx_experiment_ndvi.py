@@ -24,7 +24,7 @@ for point in [1,2,6,7,8,9,10,
                     'activation':'sigmoid'
                     }
 
-    response = subprocess.run(["python3", "./4_ndvi_narx.py",
+    response = subprocess.run(["python3", "./3_ndvi_narx.py",
                                 parametros.get('park'),
                                 parametros.get('id_point'),
                                 parametros.get('y_output'),

@@ -20,61 +20,6 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-#---------------------
-def split_data(pd_model_id,exog_order,auto_order,exog_delay,prediction_order,exogena,y_output):
-    """
-    Funcion para dale estructura a los datos
-    """
-
-    x_data = []
-    y_data = []
-
-    min_index = max([exog_order+exog_delay,auto_order])
-    index_split = pd_model_id[min_index:].index
-
-    for t in range(len(index_split)):
-
-        pd_to_split = pd_model_id[pd_model_id.index<=index_split[t]][-min_index-1:]
-
-        exogen_values = pd_to_split[(pd_to_split.shape[0]-exog_delay-exog_order):(pd_to_split.shape[0]-exog_delay)][[exogena]].values.reshape(-1)
-        auto_values = pd_to_split[-auto_order-1:][[y_output]].values.reshape(-1)
-
-        x_data.append(np.concatenate([exogen_values, auto_values[:-1]],axis=None))
-        y_data.append(auto_values[-1])
-        
-    x_data = np.array(x_data)
-    y_data = np.array(y_data)
-
-    return x_data, y_data
-
-#---------------------
-def predict_one_stap_narx(model,data_predict,data_exogena,exog_order,auto_order,exog_delay,prediction_order,exogena,y_output):
-    """
-    Funcion para predecir a un paso
-    """
-    
-    data_proces = pd.concat([data_predict,data_exogena[list(data_predict)]])
-    data_proces['type'] = 'data_in'
-
-    date_min = data_proces[data_proces[y_output].isnull()].index.min()
-    date_max = data_proces[data_proces[y_output].isnull()].index.max()
-
-    date = date_min
-    while date <= date_max:
-        x_data_test, y_data_test = split_data(data_proces[data_proces.index<=date],
-                                                exog_order,
-                                                auto_order,
-                                                exog_delay,
-                                                prediction_order,
-                                                exogena,y_output)
-
-        predit = model.predict(x_data_test[-1].reshape(1, x_data_test.shape[1]), verbose=0).reshape(-1)
-        data_proces.loc[(data_proces.index==date),y_output]=predit
-
-        date = data_proces[data_proces[y_output].isnull()].index.min()
-
-    return data_proces[data_proces.index>=date_min]
-#---------------------
 
 #---
 if __name__ == "__main__":
@@ -96,7 +41,7 @@ if __name__ == "__main__":
 
     # Parametros de modelos
     patience = 10
-    epochs=100
+    epochs=1000
 
     # Directorio del experimento
     DIR = f'./{park}/'
@@ -197,8 +142,8 @@ if __name__ == "__main__":
                     }
             }
 
-    total = int(2*x_train.shape[-1]/3)
-    n_neurons = [int(total)]
+    total = int(x_train.shape[-1])
+    n_neurons = [int(8*total/10),int(6*total/10),int(4*total/10), int(2*total/10)]
     #n_neurons = [total]
 
     activation = len(n_neurons)*[f_activation]

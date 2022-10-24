@@ -2,6 +2,7 @@
 # AUTOR: Javier Martinez
 
 import numpy as np
+import pandas as pd
 
 # Objeto para transformacion
 class LogMinimax:
@@ -45,6 +46,63 @@ def metrics(observado,prediccion):
             'rmse':mean_squared_error(observado, prediccion,squared=True),
             'r2': r2_score(observado, prediccion, multioutput='variance_weighted')
             }
+
+# Función splitdata narx
+def split_data(pd_model_id,exog_order,auto_order,exog_delay,prediction_order,exogena,y_output):
+    """
+    Funcion para dale estructura a los datos
+    """
+
+    x_data = []
+    y_data = []
+
+    min_index = max([exog_order+exog_delay,auto_order])
+    index_split = pd_model_id[min_index:].index
+
+    for t in range(len(index_split)):
+
+        pd_to_split = pd_model_id[pd_model_id.index<=index_split[t]][-min_index-1:]
+
+        exogen_values = pd_to_split[(pd_to_split.shape[0]-exog_delay-exog_order):(pd_to_split.shape[0]-exog_delay)][[exogena]].values.reshape(-1)
+        auto_values = pd_to_split[-auto_order-1:][[y_output]].values.reshape(-1)
+
+        x_data.append(np.concatenate([exogen_values, auto_values[:-1]],axis=None))
+        y_data.append(auto_values[-1])
+        
+    x_data = np.array(x_data)
+    y_data = np.array(y_data)
+
+    return x_data, y_data
+
+# Función prediccion narx
+def predict_one_stap_narx(model,data_predict,data_exogena,exog_order,auto_order,exog_delay,prediction_order,exogena,y_output):
+    """
+    Funcion para predecir a un paso
+    """
+    
+    data_proces = pd.concat([data_predict,data_exogena[list(data_predict)]])
+    data_proces['type'] = 'data_in'
+
+    date_min = data_proces[data_proces[y_output].isnull()].index.min()
+    date_max = data_proces[data_proces[y_output].isnull()].index.max()
+
+    date = date_min
+    while date <= date_max:
+        x_data_test, y_data_test = split_data(data_proces[data_proces.index<=date],
+                                                exog_order,
+                                                auto_order,
+                                                exog_delay,
+                                                prediction_order,
+                                                exogena,y_output)
+
+        predit = model.predict(x_data_test[-1].reshape(1, x_data_test.shape[1]), verbose=0).reshape(-1)
+        data_proces.loc[(data_proces.index==date),y_output]=predit
+
+        date = data_proces[data_proces[y_output].isnull()].index.min()
+
+    return data_proces[data_proces.index>=date_min]
+
+
 
 # Función para grafico sst
 def graf_sst(data_figure_ajuste,data_figure_validacion,data_figure_pronostico,y,y_predict):

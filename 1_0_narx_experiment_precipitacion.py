@@ -16,10 +16,10 @@ for point in [1,2,3,4,5,
                     'id_point':str(point),
                     'y_output':'precip_t',
                     'exogena':'oni',
-                    'prediction_order':str(2*12),
+                    'prediction_order':str(1*12),
                     'auto_order':str(25*12),
-                    'exog_order':str(25*12),
-                    'exog_delay':str(0),
+                    'exog_order':str(1*12),
+                    'exog_delay':str(3),
                     'activation':'sigmoid'
                     }
 
