@@ -219,7 +219,8 @@ def graf_sst(data_figure_ajuste,data_figure_validacion,data_figure_pronostico,y,
 def precipitacion_graf( pd_precipitacion,
                         rows=5, 
                         cols=3,
-                        park = 'Cerro Saroche'
+                        park = 'Cerro Saroche',
+                        range=[0,10]
                         ):
     """
     Funcion para generar el grafico de la precipitacion total para cada id del parque.]
@@ -274,7 +275,7 @@ def precipitacion_graf( pd_precipitacion,
             fig.update_xaxes(title_text='Mes',title_font=dict(size=12))
             fig.update_yaxes(title_text='Precipitación (mm)',
                             title_font=dict(size=12),
-                            range=[0,10]
+                            range=range
                             )
             
     fig['layout']['title']['y']=0.98
