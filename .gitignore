@@ -1,1 +1,9 @@
 config.yml
+/cerro_saroche/experiments/**
+/cerro_saroche/data/**
+/terepaima/experiments/**
+/sst_nino34/experiments/**
+/experimentos_saroche/**
+/experimentos_terepaima/**
+/viejos_code/**
+/__pycache__/**
