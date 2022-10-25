@@ -28,7 +28,6 @@ if __name__ == "__main__":
     # Parque
     park = sys.argv[1]
     id_point = int(sys.argv[2])
-    print(id_point)
 
     y_output = sys.argv[3]
     exogena = sys.argv[4]
@@ -41,7 +40,7 @@ if __name__ == "__main__":
     f_activation = sys.argv[9]
 
     # Parametros de modelos
-    patience = 12
+    patience = 10
     epochs=1000
 
     # Directorio del experimento
@@ -144,7 +143,7 @@ if __name__ == "__main__":
             }
 
     total = int(2*x_train.shape[-1]/3)
-    n_neurons = [int(2*total/3),int(total/3)]
+    n_neurons = [int(total),int(2*total/3),int(1*total/3)]
     #n_neurons = [total]
 
     activation = len(n_neurons)*[f_activation]
