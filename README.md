@@ -43,9 +43,9 @@ En el directorio **./ssev-analytics** se realiza el análisis de datos y entrena
      └─ utils
 ~~~
 
-Donde *cerro_saroche*, *sst_nino34* y  *terepaima* contienen los estudios y resultados del entrenamiento de redes neuronales para la variación espacio-temporal del NDVI de los parques Cerro Saroche, Terepaima y la variación temporal de la temperatura promedio en la superficie del mar (SST) en la región Niño3.4. 
+Donde *cerro_saroche*, *sst_nino34* y  *terepaima* contienen los estudios y resultados del entrenamiento de redes neuronales para la variación espacio-temporal del NDVI de los parques Cerro Saroche, Terepaima y la variación temporal de la temperatura promedio en la superficie del mar (SST) en la región El Niño3.4. 
 
-## Variación temporal de la temperatura promedio en la superficie del mar (SST) en la región Niño 3.4
+## Variación temporal de la temperatura promedio en la superficie del mar (SST) en la región El Niño 3.4
 
 Los procesos desarrollados para el tratamiento de la información rorrespondientes al parque Cerro Saroche estan disponibles en **/sst_nino34/**:
 
@@ -53,7 +53,7 @@ Los procesos desarrollados para el tratamiento de la información rorrespondient
 2. [RNN variación temporal de SST en la región Nino 3.4](./sst_nino34/2_experimento_rnn_sst.ipynb).
 3. [Pronóstico del ONI](./sst_nino34/3_forecast_oni_rnn_sst.ipynb).
 
-#### Pronóstico SST región Nino 3.4
+#### Pronóstico SST región El Nino 3.4
 
 ![Precipitación Parque Terepaima](./sst_nino34/figures/nino34/pronostico_sstt.png)
 
@@ -67,7 +67,7 @@ Los procesos desarrollados para el tratamiento de la información rorrespondient
 
 ### Variación espacio-temporal del NDVI en el Parque Nacional Cerro Saroche
 
-Los procesos desarrollados para el tratamiento de la información rorrespondientes al parque Cerro Saroche estan disponibles en **/cerro_saroche/**:
+Los procesos desarrollados para el tratamiento de la información correspondientes al parque Cerro Saroche están disponibles en **/cerro_saroche/**:
 
 1. [NARX precipitación](./cerro_saroche/1_precipitacion_narx.ipynb).
 2. [Análisis de resultados NARX precipitación](./cerro_saroche/2_narx_precipitacion_analysis.ipynb).
@@ -95,7 +95,7 @@ Los procesos desarrollados para el tratamiento de la información rorrespondient
 
 ### Variación espacio-temporal del NDVI en el Parque Nacional Terepaima
 
-Los procesos desarrollados para el tratamiento de la información rorrespondientes al parque Terepaima estan disponibles en **/terepaima/**:
+Los procesos desarrollados para el tratamiento de la información correspondientes al parque Terepaima están disponibles en **/terepaima/**:
 
 1. [NARX precipitación](./terepaima/1_precipitacion_narx.ipynb).
 2. [Análisis de resultados NARX precipitación](./terepaima/2_narx_precipitacion_analysis.ipynb).

@@ -16,7 +16,7 @@ class LogMinimax:
         clase = cls()
 
         clase.values = values
-        clase.log_values = np.log(clase.values)
+        clase.log_values = np.log(clase.values + 1)
         clase.max = clase.log_values.max()
         clase.min = clase.log_values.min()
 
@@ -28,7 +28,7 @@ class LogMinimax:
 
     def inversa(self,y):
 
-        return  np.exp( ( y*(self.max - self.min) ) + self.min )
+        return  np.exp( ( y*(self.max - self.min) ) + self.min ) - 1
 
 # Funcion para metricas
 def metrics(observado,prediccion):
