@@ -106,16 +106,16 @@ Los procesos desarrollados para el tratamiento de la información correspondient
 
 #### Precipitación total (mm)
 
-![Precipitación Parque Cerro Saroche](./terepaima/figures/precipitacion_terepaima.png)
+![Precipitación Parque Parque Terepaima](./terepaima/figures/precipitacion_terepaima.png)
 
 #### NARX variación temporal de la precipitación total
 
-![Precipitación Temporal Parque Cerro Saroche](./terepaima/figures/narx_precipitacion_terepaima.png)
+![Precipitación Temporal Parque Terepaima](./terepaima/figures/narx_precipitacion_terepaima.png)
 
 #### ANN variación espacial de la precipitación total
 
-![Precipitación Espacial Parque Cerro Saroche](./terepaima/figures/ann_precipitacion_terepaima.png)
+![Precipitación Espacial Parque Terepaima](./terepaima/figures/ann_precipitacion_terepaima.png)
 
 #### NARX variación espacio-temporal del NDVI
 
-![NDVI Espacio-Temporal  Parque Cerro Saroche](./terepaima/figures/narx_ndvi.png)
+![NDVI Espacio-Temporal Parque Terepaima](./terepaima/figures/narx_ndvi_terepaima.png)

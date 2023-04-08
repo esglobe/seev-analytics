@@ -1,42 +1,29 @@
-# ## Variación espacio-temporal precipitación total
+
+# ## Análisis Precipitación Total Parque Nacional Cerro Saroche
 # 
 # **PROYECTO:** SISTEMA PARA EL SEGUIMIENTO DE ECOSISTEMAS VENEZOLANOS \
 # **AUTOR:** Javier Martinez
 
-# Directorio
-
 import os
 import pickle
 import sys
-
-print('> Directorio actual: ', os.getcwd()) 
-
-import pandas as pd
-
+ 
 from utils.MONGO import CONEXION
 from utils.UTILS import *
 from datetime import datetime
+import pandas as pd
 
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-
-from sklearn.preprocessing import MinMaxScaler
 from tensorflow import keras
-
+from sklearn.preprocessing import MinMaxScaler
 
 import warnings
+
 warnings.filterwarnings('ignore')
 
 
 #---
 if __name__ == "__main__":
     print('> Directorio actual: ', os.getcwd())
-
-    # # Conexión MongoDB 
-    # Creando la conexión con MongoDB
-    db = CONEXION.conexion()
-    db.list_collection_names()
-
 
     # Parque
     park = sys.argv[1]
@@ -54,56 +41,75 @@ if __name__ == "__main__":
     f_activation = sys.argv[9]
 
     # Parametros de modelos
-    patience = 5
+    patience = 20
     epochs=1000
 
-    # # Descargando información
-
-    # Realizando consulta
-    meteorological = db.meteorological.find({"park":park, 'id_point':id_point})
-
-    # Generando pandas dataframe
-    data_pandas = pd.DataFrame([file for file in meteorological])
-    data_pandas['periodo'] = data_pandas.time.apply(lambda x: datetime.fromordinal(x))
-    data_pandas['mes_year'] =  data_pandas['periodo'].dt.strftime('%B-%Y')
-
-
-    print(data_pandas[data_pandas.ndvi_media.notnull()].periodo.min())
-    print((data_pandas[data_pandas.ndvi_media.notnull()].periodo.max()))
-
-    pd_precipitacion = pd.read_pickle(f'./{park}/data/ann_precipitacion.pkl')[['park',
-                                                                                'periodo',
-                                                                                'year',
-                                                                                'month',
-                                                                                'id_point',
-                                                                                'latitud',
-                                                                                'longitud',
-                                                                                'type',
-                                                                                'prediction_ann',
-                                                                                'ndvi_media']]
-
-
-    # Transformacion
-    ndvi_transformacion = MinMaxScaler() #LogMinimax.create( pd_sst.oni.to_numpy() )
-    ndvi_transformacion.fit(pd_precipitacion[['prediction_ann','ndvi_media']])
-
-    pd_precipitacion[['precipitation_ann_t','ndvi_t']] = ndvi_transformacion.transform( pd_precipitacion[['prediction_ann','ndvi_media']] )
-
-
-    # Directorio experimentos
+    # Directorio del experimento
     DIR = f'./{park}/'
-    experimento = f'experiments/narx/ndvi/{id_point}'
+    experimento = f'experiments/narx/precipitacion/id_point_{id_point}'
 
     try:
         os.mkdir(f'{DIR}{experimento}')
     except:
         pass
 
-    # # Ajustando modelo NARX
-    pd_model_id = pd_precipitacion[pd_precipitacion.id_point==id_point]
-    pd_model_id.index = pd.to_datetime(pd_model_id.periodo)
-    pd_model_id = pd_model_id[[y_output,exogena]].dropna().sort_index()
+    # Consulta de la data
+    # Realizando consulta
+    # Creando la conexión con MongoDB
+    db = CONEXION.conexion()
+    db.list_collection_names()
 
+    meteorological = db.meteorological.find({"park":park, 'id_point':id_point})
+
+    # Generando pandas dataframe
+    data_pandas = pd.DataFrame([file for file in meteorological])
+    data_pandas['periodo'] = data_pandas.time.apply(lambda x: datetime.fromordinal(x))
+    data_pandas['mes_year'] =  data_pandas['periodo'].dt.strftime('%B-%Y')
+    data_pandas.index = pd.to_datetime(data_pandas.periodo)
+
+    # # Estudio Precipitación
+    pd_precipitacion = data_pandas[['id_point', 'latitud', 'longitud',
+                                    'precipitacion_mm']]
+
+    # Realizando consulta
+    data_sst = db.estimateSSTNino34.find()
+
+    # Generando pandas dataframe
+    pd_sst = pd.DataFrame([file for file in data_sst])[['nino34_mean','oni','time']]
+    pd_sst['periodo'] = pd_sst.time.apply(lambda x: datetime.fromordinal(x))
+    pd_sst.index = pd.to_datetime(pd_sst.periodo)
+
+    # Transformacion
+    oni_transformacion = MinMaxScaler() #LogMinimax.create( pd_sst.oni.to_numpy() )
+    oni_transformacion.fit(pd_sst[['oni']])
+
+    pd_sst['oni'] = oni_transformacion.transform( pd_sst[['oni']] )
+
+    # Transformacion
+    sst_transformacion = LogMinimax.create( pd_sst.nino34_mean.to_numpy() )
+
+    pd_sst['sst_t'] = sst_transformacion.transformacion()
+
+    # # Integrando base de datos
+    # Entrenamiento
+    pd_model = pd.merge(pd_precipitacion.reset_index(drop=False),pd_sst[['oni','sst_t']].reset_index(drop=False),
+                        on=['periodo'],
+                        how='left'
+                        )
+
+    # Pronostico
+    pd_sst_pron = pd_sst[['periodo','oni','sst_t']][pd_sst.periodo > pd_model.periodo.max()].copy()
+
+    # # Ajustando modelo NARX
+    # Transformacion
+    transformacion = LogMinimax.create( pd_precipitacion.precipitacion_mm.to_numpy() )
+
+    pd_model['precip_t'] = transformacion.transformacion()
+
+    # Modelo según ID point
+    pd_model_id = pd_model[pd_model.id_point==id_point]
+    pd_model_id.index = pd.to_datetime(pd_model_id.periodo)
+    pd_model_id = pd_model_id[[y_output,exogena]]
 
     x_data, y_data = split_data(pd_model_id,exog_order,auto_order,exog_delay,prediction_order,exogena,y_output)
 
@@ -115,8 +121,6 @@ if __name__ == "__main__":
     y_vasl = y_data[-prediction_order:]
 
     # Modelo NARX
-
-    import os
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
     # Metrícas
@@ -140,7 +144,8 @@ if __name__ == "__main__":
             }
 
     total = int(2*x_train.shape[-1]/3)
-    n_neurons = [total]
+    n_neurons = [int(2*total/3),int(total/3)]
+    #n_neurons = [total]
 
     activation = len(n_neurons)*[f_activation]
     kernel_initializer = 'lecun_normal'
@@ -174,6 +179,7 @@ if __name__ == "__main__":
                                     
     model.add(keras.layers.Dropout(0.1))
 
+
     # Hidden Leyers
     if len(n_neurons)>1:
         for index in list( range(1, len(n_neurons)) ):
@@ -190,8 +196,7 @@ if __name__ == "__main__":
                                             bias_constraint = confi.get('Dense').get('bias_constraint')
                                             ))
                                             
-            # model.add(keras.layers.Dropout(0.001))
-            # print()
+            #model.add(keras.layers.Dropout(0.001))
 
     # Out
     model.add(keras.layers.Dense(   units=1,
@@ -237,21 +242,22 @@ if __name__ == "__main__":
 
     trainind_pd[y_output] = y_train.reshape(-1)
     trainind_pd['type'] = 'training'
-    trainind_pd['precipitation_ann_t'] = np.nan
 
-    trainind_pd['id_point'] = id_point
+    trainind_pd['precipitacion_mm'] = trainind_pd[y_output].apply(lambda x: transformacion.inversa(x) if np.isnan(x)==False else np.nan )
+    trainind_pd['prediction_precipitacion_mm'] = trainind_pd['prediction'].apply(lambda x: transformacion.inversa(x) if np.isnan(x)==False else np.nan )
 
-    trainind_pd[['prediction_ann','ndvi_prediction']] = ndvi_transformacion.inverse_transform(trainind_pd[['precipitation_ann_t','prediction']])
-    trainind_pd[['prediction_ann','ndvi_media']] = ndvi_transformacion.inverse_transform(trainind_pd[['precipitation_ann_t',y_output]])
+    trainind_pd = pd.merge(trainind_pd,pd_model_id[[exogena]].reset_index(drop=False),
+                            on=['periodo'],
+                            how='left')
 
-    trainind_pd = trainind_pd.reset_index(drop=False)[['id_point', 'periodo','type','ndvi_prediction','ndvi_media']]
+    trainind_pd.index = pd.to_datetime(trainind_pd.periodo)
 
     # Validacion entrenamiento
-    trainig_metrics = metrics(observado=trainind_pd.ndvi_media,
-                            prediccion=trainind_pd.ndvi_prediction)
+    trainig_metrics = metrics(observado=trainind_pd.precipitacion_mm,
+                            prediccion=trainind_pd.prediction_precipitacion_mm)
 
-
-    # Data de test
+    # Evaluación validación
+    # Data de Validacion
     validation_pd = pd.DataFrame(testPredict,
                                 index = pd_model_id[-prediction_order:].index,
                                 columns=['prediction']
@@ -259,46 +265,36 @@ if __name__ == "__main__":
 
     validation_pd[y_output] = y_vasl.reshape(-1)
     validation_pd['type'] = 'validation'
-    validation_pd['precipitation_ann_t'] = np.nan
 
-    validation_pd['id_point'] = id_point
+    validation_pd['precipitacion_mm'] = validation_pd[y_output].apply(lambda x: transformacion.inversa(x) if np.isnan(x)==False else np.nan )
+    validation_pd['prediction_precipitacion_mm'] = validation_pd['prediction'].apply(lambda x: transformacion.inversa(x) if np.isnan(x)==False else np.nan )
 
-    validation_pd[['prediction_ann','ndvi_prediction']] = ndvi_transformacion.inverse_transform(validation_pd[['precipitation_ann_t','prediction']])
-    validation_pd[['prediction_ann','ndvi_media']] = ndvi_transformacion.inverse_transform(validation_pd[['precipitation_ann_t',y_output]])
-
-    validation_pd = validation_pd.reset_index(drop=False)[['id_point', 'periodo','type','ndvi_prediction','ndvi_media']]
+    validation_pd = pd.merge(validation_pd,pd_model_id[[exogena]].reset_index(drop=False),
+                            on=['periodo'],
+                            how='left')
 
     # Validacion entrenamiento
-    validation_metrics = metrics(observado=validation_pd.ndvi_media,
-                            prediccion=validation_pd.ndvi_prediction)
+    validation_metrics = metrics(observado=validation_pd.precipitacion_mm,
+                            prediccion=validation_pd.prediction_precipitacion_mm)
 
-    # Sección Test
-
-
+    # Test
     data_exogena = pd_model_id[-prediction_order:][[exogena]]
     data_exogena[y_output] = np.nan
     data_predict = pd_model_id[pd_model_id.index < data_exogena.index.min()][[y_output,exogena]]
 
     pd_test = predict_one_stap_narx(model,data_predict,data_exogena,exog_order,auto_order,exog_delay,prediction_order,exogena,y_output)
 
-    pd_test = predict_one_stap_narx(model,data_predict,data_exogena,exog_order,auto_order,exog_delay,prediction_order,exogena,y_output)
-
     pd_test = pd_test.rename(columns={y_output:'prediction'})
     pd_test['type'] = 'test'
 
-    pd_test[y_output] = pd_model_id[pd_model_id.index > trainind_pd.periodo.max()][y_output]
+    pd_test['precip_t'] = pd_model_id[pd_model_id.index > trainind_pd.periodo.max()][y_output]
 
-    pd_test['id_point'] = id_point
-
-    pd_test[['prediction_ann','ndvi_prediction']] = ndvi_transformacion.inverse_transform(pd_test[['precipitation_ann_t','prediction']])
-    pd_test[['prediction_ann','ndvi_media']] = ndvi_transformacion.inverse_transform(pd_test[['precipitation_ann_t',y_output]])
-
-    pd_test = pd_test.reset_index(drop=False)[['id_point', 'periodo','type','ndvi_prediction','ndvi_media']]
+    pd_test['precipitacion_mm'] = pd_test[y_output].apply(lambda x: transformacion.inversa(x) if np.isnan(x)==False else np.nan )
+    pd_test['prediction_precipitacion_mm'] = pd_test['prediction'].apply(lambda x: transformacion.inversa(x) if np.isnan(x)==False else np.nan )
 
     # Validacion entrenamiento
-    test_metrics = metrics(observado=pd_test.ndvi_media,
-                            prediccion=pd_test.ndvi_prediction)
-
+    test_metrics = metrics(observado=pd_test.precipitacion_mm,
+                            prediccion=pd_test.prediction_precipitacion_mm)
 
     # Resultados del modelo
     dict_metrics = {'epocas':[len(history.epoch)],
@@ -329,33 +325,33 @@ if __name__ == "__main__":
 
     experimento_pd = pd.DataFrame.from_dict(dict_metrics)
 
-    # Pronóstico
+    # Pronósticoimport os
     data_predict = pd_model_id[[y_output,exogena]]
 
-    data_exogena = pd_precipitacion[(pd_precipitacion.periodo > data_predict.index.max()) & (pd_precipitacion.id_point==id_point)][[exogena,'periodo']]
-    data_exogena.index = pd.to_datetime(data_exogena.periodo)
+    data_exogena = pd_sst_pron[pd_sst_pron.index>data_predict.index.max()][[exogena]]
     data_exogena[y_output] = np.nan
-    data_exogena = data_exogena.sort_index()[[exogena,y_output]]
+    data_exogena = data_exogena[[y_output,exogena]]
 
     pd_prediction = predict_one_stap_narx(model,data_predict,data_exogena,exog_order,auto_order,exog_delay,prediction_order, exogena, y_output)
+
     pd_prediction = pd_prediction.rename(columns={y_output:'prediction'})
     pd_prediction['type'] = 'prediction'
-    pd_prediction['id_point'] = id_point
 
+    pd_prediction['precipitacion_mm'] = np.nan
+    pd_prediction['prediction_precipitacion_mm'] = pd_prediction['prediction'].apply(lambda x: transformacion.inversa(x) if np.isnan(x)==False else np.nan )
 
-    pd_prediction[['prediction_ann','ndvi_prediction']] = ndvi_transformacion.inverse_transform(pd_prediction[['precipitation_ann_t','prediction']])
-    pd_prediction['ndvi_media'] = np.nan
+    pd_prediction['precip_t'] = np.nan
 
-    pd_prediction = pd_prediction.reset_index(drop=False)[['id_point', 'periodo','type','ndvi_prediction','ndvi_media']]
+    columns = list(pd_prediction.reset_index(drop=False))
+    
 
     # Uniendo informacion
-    pd_summary = pd.concat([trainind_pd[list(pd_prediction)], 
-                            pd_test[list(pd_prediction)], 
-                            validation_pd[list(pd_prediction)], 
-                            pd_prediction[list(pd_prediction)]
+    pd_summary = pd.concat([trainind_pd.reset_index(drop=True)[columns], 
+                            pd_test.reset_index(drop=False)[columns], 
+                            validation_pd[columns], 
+                            pd_prediction.reset_index(drop=False)[columns]
                             ])
 
-    
     model_confi = {"id_point":id_point,
             "n_neurons":n_neurons,
             "activation":activation,
@@ -382,6 +378,7 @@ if __name__ == "__main__":
         # confi
         with open(f'{DIR}{experimento}/model_confi.pkl', 'wb') as file_pi:
             pickle.dump(model_confi, file_pi)
+    
         
         # guardando resultados
         pd_summary.to_pickle(f'{DIR}{experimento}/predicciones.pkl')
@@ -402,7 +399,7 @@ if __name__ == "__main__":
             # History
             with open(f'{DIR}{experimento}/history.pkl', 'wb') as file_pi:
                 pickle.dump(history.history, file_pi)
-
+            
             # confi
             with open(f'{DIR}{experimento}/model_confi.pkl', 'wb') as file_pi:
                 pickle.dump(model_confi, file_pi)
@@ -411,5 +408,6 @@ if __name__ == "__main__":
             pd_summary.to_pickle(f'{DIR}{experimento}/predicciones.pkl')
 
 
+    # Guardando Summary
     experi = f'{DIR}{experimento}/{id_point}_{len(n_neurons)}_{activation[0]}_{prediction_order}_{auto_order}_{exog_order}_{exog_delay}'
     experimento_pd.to_csv(f'{experi}_summary.csv',index=False)
